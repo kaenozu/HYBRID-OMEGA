@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface Signal {
   symbol: string;
@@ -13,67 +13,84 @@ interface MarketScannerProps {
   signals: Signal[];
   onSelect: (symbol: string) => void;
   selectedSymbol: string;
+  onExecute: (type: 'BUY' | 'SELL', amount: number) => void;
 }
 
-const MarketScanner: React.FC<MarketScannerProps> = ({ signals, onSelect, selectedSymbol }) => {
+const MarketScanner: React.FC<MarketScannerProps> = ({ signals, onSelect, selectedSymbol, onExecute }) => {
+  const [amount, setAmount] = useState<number>(1);
+
   return (
-    <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-xl">
+    <div className="bg-slate-900 rounded-2xl border border-slate-800 overflow-hidden shadow-2xl flex flex-col h-full">
       <div className="p-4 border-b border-slate-800 bg-slate-900/50 flex items-center justify-between">
-        <h3 className="font-black text-slate-100 flex items-center gap-2 text-xs uppercase tracking-widest">
-          <i className="fa-solid fa-bolt-lightning text-amber-500 animate-pulse"></i>
-          AI リアルタイム推奨銘柄
+        <h3 className="font-black text-slate-100 flex items-center gap-2 text-[10px] uppercase tracking-widest">
+          <i className="fa-solid fa-satellite-dish text-indigo-400"></i>
+          マーケット・スキャナー
         </h3>
-        <span className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Auto-Scan Active</span>
+        <span className="text-[8px] text-slate-500 font-bold uppercase">Live</span>
       </div>
-      <div className="divide-y divide-slate-800">
+      
+      <div className="flex-1 overflow-y-auto divide-y divide-slate-800 custom-scrollbar">
         {signals.map((s) => {
-          const isHighAlpha = s.strength >= 4 && s.sentiment !== 'NEUTRAL';
+          const isSelected = selectedSymbol === s.symbol;
           return (
-            <button
-              key={s.symbol}
-              onClick={() => !s.isSyncing && onSelect(s.symbol)}
-              disabled={s.isSyncing}
-              className={`w-full p-4 flex items-center justify-between hover:bg-slate-800/50 transition-all group ${
-                selectedSymbol === s.symbol ? 'bg-indigo-500/10 border-l-4 border-l-indigo-500' : 'border-l-4 border-l-transparent'
-              } ${s.isSyncing ? 'opacity-60 cursor-wait' : ''}`}
-            >
-              <div className="text-left">
-                <div className="flex items-center gap-2">
-                  <div className="font-black text-slate-200 text-sm tracking-tight">{s.symbol}</div>
-                  {isHighAlpha && (
-                    <span className="text-[8px] bg-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded font-black border border-amber-500/30 animate-pulse">AI PICK</span>
-                  )}
+            <div key={s.symbol} className={`transition-all ${isSelected ? 'bg-indigo-600/10' : 'hover:bg-slate-800/40'}`}>
+              <button
+                onClick={() => onSelect(s.symbol)}
+                className={`w-full p-4 flex items-center justify-between text-left ${isSelected ? 'border-l-4 border-indigo-500' : 'border-l-4 border-transparent'}`}
+              >
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-white text-sm">{s.symbol}</span>
+                    {s.strength >= 4 && (
+                      <span className="text-[7px] bg-amber-500 text-slate-950 px-1 rounded font-black">AI PICK</span>
+                    )}
+                  </div>
+                  <div className="text-xs font-mono text-slate-400 mt-1">
+                    ${s.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </div>
                 </div>
-                <div className={`text-[11px] font-mono ${s.isSyncing ? 'text-amber-500 animate-pulse' : 'text-slate-400'}`}>
-                  {s.isSyncing ? 'CALCULATING...' : `$${s.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                
+                <div className="text-right">
+                  <div className={`text-[8px] font-black px-2 py-0.5 rounded uppercase ${
+                    s.sentiment === 'BULLISH' ? 'text-green-400 bg-green-400/10' : 
+                    s.sentiment === 'BEARISH' ? 'text-red-400 bg-red-400/10' : 'text-slate-500 bg-slate-800'
+                  }`}>
+                    {s.sentiment === 'BULLISH' ? 'STRONG BUY' : s.sentiment === 'BEARISH' ? 'STRONG SELL' : 'NEUTRAL'}
+                  </div>
                 </div>
-              </div>
-              <div className="text-right">
-                <div className={`text-[9px] font-black px-2 py-0.5 rounded uppercase tracking-tighter ${
-                  s.isSyncing ? 'bg-slate-800 text-slate-600' :
-                  s.sentiment === 'BULLISH' ? 'bg-green-500/20 text-green-400 border border-green-500/30 shadow-[0_0_10px_rgba(34,197,94,0.1)]' : 
-                  s.sentiment === 'BEARISH' ? 'bg-red-500/20 text-red-400 border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.1)]' : 
-                  'bg-slate-700/30 text-slate-500'
-                }`}>
-                  {s.isSyncing ? 'WAIT' : s.sentiment === 'BULLISH' ? '強気：買い推奨' : s.sentiment === 'BEARISH' ? '弱気：売り推奨' : '様子見'}
+              </button>
+
+              {/* 選択時のみ表示されるクイックトレードUI */}
+              {isSelected && (
+                <div className="px-4 pb-4 pt-0 space-y-3 animate-fadeIn">
+                  <div className="flex items-center gap-2 bg-slate-950 rounded-lg p-2 border border-slate-800">
+                    <span className="text-[8px] font-black text-slate-500 uppercase px-1">Qty</span>
+                    <input 
+                      type="number" 
+                      value={amount} 
+                      onChange={(e) => setAmount(Math.max(1, Number(e.target.value)))}
+                      className="bg-transparent text-white font-mono text-xs w-full focus:outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => onExecute('BUY', amount)}
+                      className="bg-green-600 hover:bg-green-500 text-white text-[10px] font-black py-2 rounded-lg transition-all active:scale-95"
+                    >
+                      BUY
+                    </button>
+                    <button 
+                      onClick={() => onExecute('SELL', amount)}
+                      className="bg-red-600 hover:bg-red-500 text-white text-[10px] font-black py-2 rounded-lg transition-all active:scale-95"
+                    >
+                      SELL
+                    </button>
+                  </div>
                 </div>
-                <div className="mt-1 flex justify-end gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`w-1 h-3 rounded-full transition-all duration-700 ${
-                        s.isSyncing ? 'bg-slate-800' :
-                        i < s.strength ? (s.sentiment === 'BULLISH' ? 'bg-green-500 shadow-[0_0_5px_rgba(34,197,94,0.5)]' : s.sentiment === 'BEARISH' ? 'bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]' : 'bg-slate-400') : 'bg-slate-800'}`}
-                    ></div>
-                  ))}
-                </div>
-              </div>
-            </button>
+              )}
+            </div>
           );
         })}
-      </div>
-      <div className="p-3 bg-indigo-500/5 border-t border-slate-800">
-         <p className="text-[8px] text-slate-500 italic text-center leading-tight">※AI PICKは、SNSセンチメントと直近の値動き、ニュース重要度を統合して算出されています。</p>
       </div>
     </div>
   );

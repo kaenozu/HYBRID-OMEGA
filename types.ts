@@ -53,10 +53,11 @@ export interface MarketAnalysis {
   stopLoss: number;
   confidence: number;
   alphaScore: number;
-  actualPrice?: number;
+  referencePrice: number; // 分析時の基準価格
+  actualPrice?: number;   // Google検索で取得した実勢価格
   sources?: GroundingSource[];
   backtest: BacktestResult;
-  suggestedHorizon?: string; // 推奨保持期間（例: "30分〜2時間", "1〜3日"）
+  suggestedHorizon?: string;
 }
 
 export interface Message {
