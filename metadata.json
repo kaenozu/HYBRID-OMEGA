@@ -1,0 +1,8 @@
+{
+  "name": "AIクオンツ・トレーダー - 次世代デイトレード・アシスタント",
+  "description": "Geminiを活用して、市場動向、センチメント、チャートパターンをリアルタイムで分析する洗練されたAI搭載デイトレード・ダッシュボード。",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
